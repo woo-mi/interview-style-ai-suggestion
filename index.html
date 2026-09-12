@@ -1433,8 +1433,12 @@
       clearSelection();
       pill.classList.add('selected');
       selectedLabel = pill.getAttribute('data-agent');
-      typewriter(pill.getAttribute('data-prompt'));
-      input.focus();
+      /* cards jump straight into the conversation - no composer prompting step */
+      stopTyping();
+      autoFilled = true;
+      input.value = pill.getAttribute('data-prompt');
+      layout();
+      openInstr();
     });
   });
 
