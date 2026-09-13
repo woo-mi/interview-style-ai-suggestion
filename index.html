@@ -487,6 +487,46 @@
   }
   body.outcome .outcome-frame { display: block; }
 
+  /* "Creating agent..." loading modal (frame "loading screen - interview style") */
+  .rl-scrim {
+    position: fixed; inset: 0; z-index: 500;
+    background: #171717AB;
+    opacity: 0; visibility: hidden;
+    transition: opacity 0.18s ease, visibility 0s linear 0.18s;
+  }
+  body.rlmodal .rl-scrim { opacity: 1; visibility: visible; transition: opacity 0.18s ease; }
+  .rl-modal {
+    position: fixed; left: 50%; top: 50%; z-index: 501;
+    width: 463px; max-width: calc(100vw - 32px); height: 289px;
+    border-radius: 20px; background: #FFFFFF;
+    transform: translate(-50%, -50%) scale(0.98);
+    opacity: 0; visibility: hidden;
+    transition: opacity 0.18s ease, transform 0.18s ease, visibility 0s linear 0.18s;
+  }
+  body.rlmodal .rl-modal {
+    opacity: 1; visibility: visible;
+    transform: translate(-50%, -50%) scale(1);
+    transition: opacity 0.18s ease, transform 0.18s ease;
+  }
+  .rl-modal .m-face { position: absolute; left: 50%; top: 66px; margin-left: -28px; }
+  .rl-modal .m-bar {
+    position: absolute; top: 131.5px; left: 50%; margin-left: -28px;
+    width: 56px; height: 6px; border-radius: 100px; background: #DDDDDD;
+    overflow: hidden;
+  }
+  .rl-modal .m-fill {
+    display: block; width: 0; height: 6px; border-radius: 100px; background: #232323;
+  }
+  body.rlmodal .m-fill { width: 56px; transition: width 3.8s ease-out 0.1s; }
+  .rl-modal .m-title {
+    position: absolute; top: 159px; left: 24px; right: 24px; text-align: center;
+    font-size: 19px; line-height: 28px; font-weight: 500; color: #232323;
+  }
+  .rl-modal .m-body {
+    position: absolute; top: 193px; left: 50%; transform: translateX(-50%); width: 317px; max-width: calc(100% - 48px);
+    text-align: center; font-size: 15px; line-height: 18px; color: #232323;
+  }
+
   /* Data domain card (frame "Data domain") */
   .domain-card {
     margin: 0 24px;
@@ -1021,6 +1061,18 @@
 
 <iframe class="outcome-frame" id="outcomeFrame" src="outcome.html" title="interview style Outcome"></iframe>
 
+<div class="rl-scrim" id="rlScrim"></div>
+<div class="rl-modal" id="rlModal" role="dialog" aria-modal="true" aria-label="Creating agent">
+  <svg class="m-face" width="56" height="56" viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="28" cy="28" r="26" fill="none" stroke="#232323" stroke-width="4"/>
+    <rect x="26" y="18" width="5" height="10" rx="2.5" fill="#232323"/>
+    <rect x="38" y="18" width="5" height="10" rx="2.5" fill="#232323"/>
+  </svg>
+  <div class="m-bar"><span class="m-fill"></span></div>
+  <div class="m-title">Creating agent...</div>
+  <div class="m-body">It's watching your metrics now. You'll get an<br>Metric Movement Explainer with settings.</div>
+</div>
+
 <script>
 (function () {
   var composer = document.getElementById('composer');
@@ -1413,13 +1465,30 @@
   function closeOutcome() {
     document.body.classList.remove('outcome');
   }
-  document.getElementById('createAgentBtn').addEventListener('click', openOutcome);
+  /* Create agent -> "loading screen - interview style" modal (4s, progress bar fills) -> Outcome */
+  var rlModalTimer = null;
+  function openRlModal() {
+    document.body.classList.add('rlmodal');
+    clearTimeout(rlModalTimer);
+    rlModalTimer = setTimeout(function () { closeRlModal(); openOutcome(); }, 4000);
+  }
+  function closeRlModal() {
+    clearTimeout(rlModalTimer);
+    rlModalTimer = null;
+    document.body.classList.remove('rlmodal');
+  }
+  document.getElementById('createAgentBtn').addEventListener('click', openRlModal);
+  document.getElementById('rlScrim').addEventListener('click', closeRlModal);
   window.addEventListener('message', function (e) {
     if (e.data === 'outcomeBack') closeOutcome();
   });
 
   document.addEventListener('keydown', function (e) {
     if (e.key !== 'Escape') return;
+    if (document.body.classList.contains('rlmodal')) {
+      closeRlModal(); /* cancel the creation, back to the Overview thread */
+      return;
+    }
     if (document.body.classList.contains('outcome')) {
       closeOutcome(); /* back to the Overview thread */
       return;
